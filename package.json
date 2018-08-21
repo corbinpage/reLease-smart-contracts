@@ -1,0 +1,22 @@
+{
+  "name": "capeo-smart-contracts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "chai": "^4.1.2",
+    "chai-bignumber": "^2.0.2",
+    "lodash": "^4.17.10",
+    "openzeppelin-solidity": "^1.12.0",
+    "truffle": "^4.1.14"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
