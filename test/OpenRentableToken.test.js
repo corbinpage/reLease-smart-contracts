@@ -17,16 +17,19 @@ contract('OpenRentableToken', function (accounts) {
   const nonExistentTokenId = 999;
   const creator = accounts[0];
   const anyone = accounts[9];
-  const MIN_RENT_TIME = 24*3600*1000;
-  const t0 = Math.floor(new Date() / MIN_RENT_TIME);
-  const startTime = t0 + 7;
-  const endTime = startTime + 3;
+  const RENTAL_TIME_INTERVAL = 24*3600;
+  let t0 = new Date(), startTime = new Date(), endTime = new Date();
+  startTime.setDate(t0.getDate() + 1);
+  endTime.setDate(t0.getDate() + 8);
+  startTime = Math.floor(startTime.getTime()/1000);
+  endTime = Math.floor(endTime.getTime()/1000);
+  t0 = Math.floor(t0.getTime()/1000);
 
   beforeEach(async function () {
     this.token = await OpenRentableToken.new(name, symbol, { from: creator });
   });
 
-  describe.only('like an OpenRentableToken', function () {
+  describe('like an OpenRentableToken', function () {
     beforeEach(async function () {
       await this.token.mint(creator, firstTokenId, { from: creator });
       await this.token.mint(creator, secondTokenId, { from: creator });
@@ -45,43 +48,54 @@ contract('OpenRentableToken', function (accounts) {
 
     describe('reserve the token', function () {
       it('requires the startTime to be less than the endTime', async function () {
-        return expectThrow(
-          await this.token.reserve(firstTokenId, startTime, startTime - 1)
+        await assertRevert(
+          this.token.reserve(firstTokenId, startTime, t0)
         );
       });
 
       it('requires the startTime to be less than the currentTime', async function () {
-        return expectThrow(
-          await this.token.reserve(firstTokenId, t0 - 1, endTime)
+        await assertRevert(
+          this.token.reserve(firstTokenId, t0 - RENTAL_TIME_INTERVAL, endTime)
         );
       });
 
-      it('returns false if reserved', async function () {
+      it('returns false if reserved the whole time', async function () {
         await this.token.reserve(firstTokenId, startTime, endTime);
+        await assertRevert(
+          this.token.reserve(firstTokenId, startTime, endTime)
+        );
+      });
+
+      it('fails if reserved during the startTime', async function () {
+        await this.token.reserve(firstTokenId, t0, startTime);
+        await assertRevert(
+          this.token.reserve(firstTokenId, startTime, endTime)
+        );
+      });
+
+      it('fails if reserved during the endTime', async function () {
+        await this.token.reserve(firstTokenId, endTime, endTime + RENTAL_TIME_INTERVAL);
+        await assertRevert(
+          this.token.reserve(firstTokenId, startTime, endTime)
+        );
+      });
+
+      it('fails if reserved during the between time', async function () {
+        await this.token.reserve(firstTokenId, startTime + RENTAL_TIME_INTERVAL, endTime - RENTAL_TIME_INTERVAL);
+        await assertRevert(
+          this.token.reserve(firstTokenId, startTime, endTime)
+        );
+      });
+
+      it('correctly reserves for one day', async function () {
+        await this.token.reserve(firstTokenId, startTime, startTime);
         (await this.token.checkAvailable(firstTokenId, startTime, startTime)).should.be.false;
       });
 
-
-
-
-      // Check max number of intervals
-      // enumerate tokenId
-
-
-      // const to = accounts[1];
-      // const tokenId = 3;
-
-      // beforeEach(async function () {
-      //   await this.token.mint(to, tokenId);
-      // });
-
-      // it('adjusts owner tokens by index', async function () {
-      //   (await this.token.tokenOfOwnerByIndex(to, 0)).toNumber().should.be.equal(tokenId);
-      // });
-
-      // it('adjusts all tokens list', async function () {
-      //   (await this.token.tokenByIndex(2)).toNumber().should.be.equal(tokenId);
-      // });
+      it('correctly reserves for 60 days', async function () {
+        await this.token.reserve(firstTokenId, startTime, startTime + (RENTAL_TIME_INTERVAL*60));
+        (await this.token.checkAvailable(firstTokenId, startTime, startTime + (RENTAL_TIME_INTERVAL*60))).should.be.false;
+      });
     });
   });
 

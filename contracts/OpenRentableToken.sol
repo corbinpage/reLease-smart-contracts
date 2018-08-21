@@ -11,13 +11,13 @@ contract OpenRentableToken is ERC721Token {
   */
 
   // @dev default minimum unit of rent is one day (in seconds)
-  uint256 public MIN_RENT_TIME = 3600*24;
+  uint256 public RENTAL_TIME_INTERVAL = 3600*24;
 
   // @dev mapping for basic reservations: tokenId => _time => renter
   mapping (uint256 => mapping (uint256 => address)) public reservations;
 
   // @dev the tokenId of the next token to be minted
-  uint256 nextTokenId = 1;
+  uint256 nextTokenId = 0;
 
   /**
       EVENTS
@@ -89,27 +89,24 @@ contract OpenRentableToken is ERC721Token {
   external
   returns (bool)
   {
+
     require(_isFuture(_start));
-    require(_start<_stop);
     require(checkAvailable(_tokenId, _start, _stop));
 
-    // check availability (for all dates in range)
-    for (uint i = _start; i <= _stop; i ++) {
-      if (! _isAvailable(_tokenId, i)) {
-        return false;
-      }
-    }
+    uint256 start = _convertTime(_start);
+    uint256 stop = _convertTime(_stop);
+    require(start <= stop);
 
     // make reservation
-    for (i = _start; i <= _stop; i ++) {
-        reservations[_tokenId][i] = msg.sender;
+    for (uint i = start; i <= stop; i++) {
+      reservations[_tokenId][i] = msg.sender;
     }
 
     emit Reserve(
       msg.sender, 
       _tokenId,
-      _start,
-      _stop
+      start,
+      stop
     );
 
     return true;
@@ -127,7 +124,10 @@ contract OpenRentableToken is ERC721Token {
   view
   returns (bool available)
   {
-    for (uint i = _start; i <= _stop; i = i + MIN_RENT_TIME) {
+    uint256 start = _convertTime(_start);
+    uint256 stop = _convertTime(_stop);
+
+    for (uint i = start; i <= stop; i++) {
       if (! _isAvailable(_tokenId, i)) {
         return false;
       }
@@ -151,17 +151,27 @@ contract OpenRentableToken is ERC721Token {
 
   // @dev internal check if reservation date is _isFuture
   function _isFuture(uint256 _time) internal view returns (bool future) {
-    uint256 _now = now/MIN_RENT_TIME;
+    uint256 nowTime = _convertTime(now);
+    uint256 time = _convertTime(_time);
 
-    return _time>_now;
+    return time>=nowTime;
   }
 
   // @dev find renter of token at specific time
   function _getRenter(uint256 _tokenId, uint256 _time)
-    internal
-    view
-    returns (address _renter)
-    {
-    _renter = reservations[_tokenId][_time];
-    }
+  internal
+  view
+  returns (address _renter)
+  {
+  _renter = reservations[_tokenId][_time];
+  }
+
+  // @dev convert _time to a multiple of RENTAL_TIME_INTERVAL
+  function _convertTime(uint256 _time)
+  internal
+  view
+  returns (uint256 _newTime)
+  {
+    return _time/(RENTAL_TIME_INTERVAL);
+  }
 }
