@@ -144,6 +144,49 @@ contract('OpenRentableToken', function (accounts) {
         );
       });
     });
+
+    describe('rental price for the token', function () {
+      it('allows reservations when rental price is 0', async function () {
+        (await this.token.getRentalPrice(firstTokenId)).toNumber().should.equal(RENTAL_PRICE);
+        await this.token.reserve(firstTokenId, startTime, endTime, {
+          from: creator,
+          value: new BigNumber(RENTAL_PRICE)
+        });
+        (await this.token.getRenter(firstTokenId, startTime)).should.equal(creator);
+      });
+
+      it('allows reservations when rental price is populated', async function () {
+        const NEW_RENTAL_PRICE = 1000000000000000000;
+        await this.token.setRentalPrice(firstTokenId, NEW_RENTAL_PRICE, { from: creator });
+        (await this.token.getRentalPrice(firstTokenId)).toNumber().should.equal(NEW_RENTAL_PRICE);
+        await this.token.reserve(firstTokenId, startTime, endTime, {
+          from: creator,
+          value: new BigNumber(NEW_RENTAL_PRICE)
+        });
+        (await this.token.getRenter(firstTokenId, startTime)).should.equal(creator);
+      });
+
+      it('rejects reservations when rental price is not met', async function () {
+        const NEW_RENTAL_PRICE = 1000000000000000000;
+        await this.token.setRentalPrice(firstTokenId, NEW_RENTAL_PRICE, { from: creator });
+        (await this.token.getRentalPrice(firstTokenId)).toNumber().should.equal(NEW_RENTAL_PRICE);
+        await assertRevert(
+          this.token.reserve(firstTokenId, startTime, endTime, {
+            from: creator,
+            value: new BigNumber(0)
+          })
+        );
+      });
+    });
+
+    describe('mintWithPrice function', function () {
+      it('allows tokens to be minted with a price', async function () {
+        const tokenId = 1;
+        const NEW_RENTAL_PRICE = 1000000000000000000;
+        await this.token.mintWithPrice(creator, tokenId, NEW_RENTAL_PRICE, { from: creator });
+        (await this.token.getRentalPrice(tokenId)).toNumber().should.equal(NEW_RENTAL_PRICE);
+      });
+    });
   });
 
   describe('like a full ERC721', function () {

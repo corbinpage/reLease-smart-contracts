@@ -35,10 +35,6 @@ contract OpenRentableToken is ERC721Token {
   // event CancelReservation(address indexed _renter, uint256 _tokenId, uint256 _start, uint256 _stop);
 
   /**
-      MODIFIERS
-  */
-
-  /**
      ERC-721 FUNCTIONS
   */
 
@@ -48,6 +44,11 @@ contract OpenRentableToken is ERC721Token {
 
   function mint(address _to, uint256 _tokenId) public {
     super._mint(_to, _tokenId);
+  }
+
+  function mintWithPrice(address _to, uint256 _tokenId, uint256 _newPrice) public {
+    mint(_to, _tokenId);
+    rentalPrices[_tokenId] = _newPrice;
   }
 
   function burn(uint256 _tokenId) public {
@@ -122,10 +123,11 @@ contract OpenRentableToken is ERC721Token {
   ///  is not previously reserved (by calling the function checkAvailable() described below)
   ///  and then emit a Reserve event.
   function reserve(uint256 _tokenId, uint256 _start, uint256 _stop)
+  payable
   external
   returns (bool)
   {
-    require(getRentalPrice(_tokenId) == msg.value);
+    require(getRentalPrice(_tokenId) <= msg.value);
     require(_isFuture(_start));
     require(checkAvailable(_tokenId, _start, _stop));
 
