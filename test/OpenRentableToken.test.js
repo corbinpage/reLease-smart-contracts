@@ -67,7 +67,7 @@ contract('OpenRentableToken', function (accounts) {
       });
 
       it('fails if reserved during the startTime', async function () {
-        await this.token.reserve(firstTokenId, t0, startTime);
+        await this.token.reserve(firstTokenId, startTime, startTime);
         await assertRevert(
           this.token.reserve(firstTokenId, startTime, endTime)
         );
@@ -95,6 +95,18 @@ contract('OpenRentableToken', function (accounts) {
       it('correctly reserves for 60 days', async function () {
         await this.token.reserve(firstTokenId, startTime, startTime + (RENTAL_TIME_INTERVAL*60));
         (await this.token.checkAvailable(firstTokenId, startTime, startTime + (RENTAL_TIME_INTERVAL*60))).should.be.false;
+      });
+    });
+
+    describe('renterOf the token', function () {
+      it('correctly identifies renters', async function () {
+        await this.token.reserve(firstTokenId, startTime, endTime, {from: creator});
+        (await this.token.renterOf(firstTokenId, startTime)).should.equal(creator);
+        (await this.token.renterOf(firstTokenId, endTime)).should.equal(creator);
+        (await this.token.renterOf(firstTokenId, startTime - RENTAL_TIME_INTERVAL)).should.not.equal(creator);
+        (await this.token.renterOf(firstTokenId, startTime - RENTAL_TIME_INTERVAL)).should.equal('0x0000000000000000000000000000000000000000');
+        (await this.token.renterOf(firstTokenId, endTime + RENTAL_TIME_INTERVAL)).should.not.equal(creator);
+        (await this.token.renterOf(firstTokenId, endTime + RENTAL_TIME_INTERVAL)).should.equal('0x0000000000000000000000000000000000000000');
       });
     });
   });

@@ -1,7 +1,6 @@
 pragma solidity ^0.4.24;
 
-import "./ERC721Token.sol";
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/token/ERC721/ERC721Token.sol";
 
 // @title PrepayTimeIntervalOpenRentable
 contract OpenRentableToken is ERC721Token {
@@ -78,7 +77,8 @@ contract OpenRentableToken is ERC721Token {
   view
   returns (address)
   {
-    return reservations[_tokenId][_time];
+    uint256 time = _convertTime(_time);
+    return reservations[_tokenId][time];
   }
 
   /// @notice Reserve access to token `_tokenId` from time `_start` to time `_stop`
@@ -151,10 +151,7 @@ contract OpenRentableToken is ERC721Token {
 
   // @dev internal check if reservation date is _isFuture
   function _isFuture(uint256 _time) internal view returns (bool future) {
-    uint256 nowTime = _convertTime(now);
-    uint256 time = _convertTime(_time);
-
-    return time>=nowTime;
+    return _time>=now;
   }
 
   // @dev find renter of token at specific time
