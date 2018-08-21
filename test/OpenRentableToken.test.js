@@ -18,6 +18,7 @@ contract('OpenRentableToken', function (accounts) {
   const creator = accounts[0];
   const anyone = accounts[9];
   const RENTAL_TIME_INTERVAL = 24*3600;
+  const RENTAL_PRICE = 0;
   let t0 = new Date(), startTime = new Date(), endTime = new Date();
   startTime.setDate(t0.getDate() + 1);
   endTime.setDate(t0.getDate() + 8);
@@ -123,6 +124,23 @@ contract('OpenRentableToken', function (accounts) {
         const NEW_RENTAL_TIME_INTERVAL = 3600*24*7;
         await assertRevert(
           this.token.setRentalTimeInterval(firstTokenId, NEW_RENTAL_TIME_INTERVAL, { from: anyone })
+        );
+      });
+    });
+
+    describe('setRentalPrice for the token', function () {
+      it('allows the token owner to change the price', async function () {
+        (await this.token.getRentalPrice(firstTokenId)).toNumber().should.equal(RENTAL_PRICE);
+        const NEW_RENTAL_PRICE = 1000000000000000000;
+        await this.token.setRentalPrice(firstTokenId, NEW_RENTAL_PRICE, { from: creator });
+        (await this.token.getRentalPrice(firstTokenId)).toNumber().should.equal(NEW_RENTAL_PRICE);
+      });
+
+      it('does not allow a non-token owner to change the price', async function () {
+        (await this.token.getRentalPrice(firstTokenId)).toNumber().should.equal(RENTAL_PRICE);
+        const NEW_RENTAL_PRICE = 1000000000000000000;
+        await assertRevert(
+          this.token.setRentalPrice(firstTokenId, NEW_RENTAL_PRICE, { from: anyone })
         );
       });
     });
