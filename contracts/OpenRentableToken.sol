@@ -72,7 +72,7 @@ contract OpenRentableToken is ERC721Token {
 
   /// @notice Find the renter of an NFT token as of `_time`
   /// @dev The renter is who made a reservation on `_tokenId` and the reservation spans over `_time`.
-  function renterOf(uint256 _tokenId, uint256 _time) 
+  function getRenter(uint256 _tokenId, uint256 _time) 
   public
   view
   returns (address)
@@ -152,15 +152,6 @@ contract OpenRentableToken is ERC721Token {
   // @dev internal check if reservation date is _isFuture
   function _isFuture(uint256 _time) internal view returns (bool future) {
     return _time>=now;
-  }
-
-  // @dev find renter of token at specific time
-  function _getRenter(uint256 _tokenId, uint256 _time)
-  internal
-  view
-  returns (address _renter)
-  {
-  _renter = reservations[_tokenId][_time];
   }
 
   // @dev convert _time to a multiple of RENTAL_TIME_INTERVAL
