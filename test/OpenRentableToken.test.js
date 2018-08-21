@@ -109,6 +109,23 @@ contract('OpenRentableToken', function (accounts) {
         (await this.token.getRenter(firstTokenId, endTime + RENTAL_TIME_INTERVAL)).should.equal('0x0000000000000000000000000000000000000000');
       });
     });
+
+    describe('setRentalTimeInterval for the token', function () {
+      it('allows the token owner to change the interval', async function () {
+        (await this.token.getRentalTimeInterval(firstTokenId)).toNumber().should.equal(RENTAL_TIME_INTERVAL);
+        const NEW_RENTAL_TIME_INTERVAL = 3600*24*7;
+        await this.token.setRentalTimeInterval(firstTokenId, NEW_RENTAL_TIME_INTERVAL, { from: creator });
+        (await this.token.getRentalTimeInterval(firstTokenId)).toNumber().should.equal(NEW_RENTAL_TIME_INTERVAL);
+      });
+
+      it('does not allow a non-token owner to change the interval', async function () {
+        (await this.token.getRentalTimeInterval(firstTokenId)).toNumber().should.equal(RENTAL_TIME_INTERVAL);
+        const NEW_RENTAL_TIME_INTERVAL = 3600*24*7;
+        await assertRevert(
+          this.token.setRentalTimeInterval(firstTokenId, NEW_RENTAL_TIME_INTERVAL, { from: anyone })
+        );
+      });
+    });
   });
 
   describe('like a full ERC721', function () {

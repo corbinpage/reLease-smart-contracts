@@ -10,13 +10,13 @@ contract OpenRentableToken is ERC721Token {
   */
 
   // @dev default minimum unit of rent is one day (in seconds)
-  uint256 public RENTAL_TIME_INTERVAL = 3600*24;
+  uint256 public DEFAULT_RENTAL_TIME_INTERVAL = 3600*24;
+
+  // @dev mapping for storing the rental time interval for a token
+  mapping (uint256 => uint256) public rentalTimeIntervals;
 
   // @dev mapping for basic reservations: tokenId => _time => renter
   mapping (uint256 => mapping (uint256 => address)) public reservations;
-
-  // @dev the tokenId of the next token to be minted
-  uint256 nextTokenId = 0;
 
   /**
       EVENTS
@@ -64,11 +64,23 @@ contract OpenRentableToken is ERC721Token {
      ERC-809 FUNCTIONS
   */
 
-  // function changeMinRental(uint256 _tokenId, uint256 _newMin) external {
-  //   Token storage token = tokens[_tokenId];
-  //   require(msg.sender == ownedTokensIndex[_tokenId]);
-  //   token.minRentTime = _newMin;
-  // }
+  // @dev Set the rental time interval for the token
+  function setRentalTimeInterval(uint256 _tokenId, uint256 _newInterval) external {
+    require(msg.sender == tokenOwner[_tokenId]);
+    rentalTimeIntervals[_tokenId] = _newInterval;
+  }
+
+  // @dev Lookup to get the rental time interval for the token
+  function getRentalTimeInterval(uint256 _tokenId)
+  public
+  view
+  returns (uint256)
+  {
+    if(rentalTimeIntervals[_tokenId] == 0) {
+      return DEFAULT_RENTAL_TIME_INTERVAL;
+    }
+    return rentalTimeIntervals[_tokenId];
+  }
 
   /// @notice Find the renter of an NFT token as of `_time`
   /// @dev The renter is who made a reservation on `_tokenId` and the reservation spans over `_time`.
@@ -77,7 +89,7 @@ contract OpenRentableToken is ERC721Token {
   view
   returns (address)
   {
-    uint256 time = _convertTime(_time);
+    uint256 time = _convertTime(_tokenId, _time);
     return reservations[_tokenId][time];
   }
 
@@ -93,8 +105,8 @@ contract OpenRentableToken is ERC721Token {
     require(_isFuture(_start));
     require(checkAvailable(_tokenId, _start, _stop));
 
-    uint256 start = _convertTime(_start);
-    uint256 stop = _convertTime(_stop);
+    uint256 start = _convertTime(_tokenId, _start);
+    uint256 stop = _convertTime(_tokenId, _stop);
     require(start <= stop);
 
     // make reservation
@@ -124,8 +136,8 @@ contract OpenRentableToken is ERC721Token {
   view
   returns (bool available)
   {
-    uint256 start = _convertTime(_start);
-    uint256 stop = _convertTime(_stop);
+    uint256 start = _convertTime(_tokenId, _start);
+    uint256 stop = _convertTime(_tokenId, _stop);
 
     for (uint i = start; i <= stop; i++) {
       if (! _isAvailable(_tokenId, i)) {
@@ -154,12 +166,13 @@ contract OpenRentableToken is ERC721Token {
     return _time>=now;
   }
 
-  // @dev convert _time to a multiple of RENTAL_TIME_INTERVAL
-  function _convertTime(uint256 _time)
+  // @dev convert _time to a multiple of rental time interval
+  function _convertTime(uint256 _tokenId, uint256 _time)
   internal
   view
   returns (uint256 _newTime)
   {
-    return _time/(RENTAL_TIME_INTERVAL);
+    uint rentalTimeInterval = getRentalTimeInterval(_tokenId);
+    return _time/rentalTimeInterval;
   }
 }
