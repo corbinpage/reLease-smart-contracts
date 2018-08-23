@@ -16,6 +16,7 @@ contract('OpenRentableToken', function (accounts) {
   const secondTokenId = 200;
   const nonExistentTokenId = 999;
   const creator = accounts[0];
+  const otherUser = accounts[1];
   const anyone = accounts[9];
   const RENTAL_TIME_INTERVAL = 24*3600;
   const RENTAL_PRICE = 0;
@@ -185,6 +186,35 @@ contract('OpenRentableToken', function (accounts) {
         const NEW_RENTAL_PRICE = 1000000000000000000;
         await this.token.mintWithPrice(creator, tokenId, NEW_RENTAL_PRICE, { from: creator });
         (await this.token.getRentalPrice(tokenId)).toNumber().should.equal(NEW_RENTAL_PRICE);
+      });
+    });
+
+    describe('cancelReservation function', function () {
+      it('allows token owner to cancel reservation', async function () {
+        await this.token.reserve(firstTokenId, startTime, endTime, {
+          from: anyone,
+          value: new BigNumber(RENTAL_PRICE)
+        });
+        (await this.token.getRenter(firstTokenId, startTime)).should.equal(anyone);
+
+        await this.token.cancelReservation(firstTokenId, startTime, endTime, {
+          from: creator
+        });
+        (await this.token.getRenter(firstTokenId, startTime)).should.equal('0x0000000000000000000000000000000000000000');
+      });
+
+      it('does not allow non-owners to cancel reservation', async function () {
+        await this.token.reserve(firstTokenId, startTime, endTime, {
+          from: anyone,
+          value: new BigNumber(RENTAL_PRICE)
+        });
+        (await this.token.getRenter(firstTokenId, startTime)).should.equal(anyone);
+
+        await assertRevert(
+          this.token.cancelReservation(firstTokenId, startTime, endTime, {
+            from: otherUser
+          })
+        );
       });
     });
   });
