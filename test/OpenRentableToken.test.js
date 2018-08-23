@@ -16,7 +16,9 @@ contract('OpenRentableToken', function (accounts) {
   const secondTokenId = 200;
   const nonExistentTokenId = 999;
   const creator = accounts[0];
+  const otherUser = accounts[1];
   const anyone = accounts[9];
+  const noAddress = '0x0000000000000000000000000000000000000000';
   const RENTAL_TIME_INTERVAL = 24*3600;
   const RENTAL_PRICE = 0;
   let t0 = new Date(), startTime = new Date(), endTime = new Date();
@@ -105,9 +107,9 @@ contract('OpenRentableToken', function (accounts) {
         (await this.token.getRenter(firstTokenId, startTime)).should.equal(creator);
         (await this.token.getRenter(firstTokenId, endTime)).should.equal(creator);
         (await this.token.getRenter(firstTokenId, startTime - RENTAL_TIME_INTERVAL)).should.not.equal(creator);
-        (await this.token.getRenter(firstTokenId, startTime - RENTAL_TIME_INTERVAL)).should.equal('0x0000000000000000000000000000000000000000');
+        (await this.token.getRenter(firstTokenId, startTime - RENTAL_TIME_INTERVAL)).should.equal(noAddress);
         (await this.token.getRenter(firstTokenId, endTime + RENTAL_TIME_INTERVAL)).should.not.equal(creator);
-        (await this.token.getRenter(firstTokenId, endTime + RENTAL_TIME_INTERVAL)).should.equal('0x0000000000000000000000000000000000000000');
+        (await this.token.getRenter(firstTokenId, endTime + RENTAL_TIME_INTERVAL)).should.equal(noAddress);
       });
     });
 
@@ -185,6 +187,62 @@ contract('OpenRentableToken', function (accounts) {
         const NEW_RENTAL_PRICE = 1000000000000000000;
         await this.token.mintWithPrice(creator, tokenId, NEW_RENTAL_PRICE, { from: creator });
         (await this.token.getRentalPrice(tokenId)).toNumber().should.equal(NEW_RENTAL_PRICE);
+      });
+    });
+
+    describe('cancelReservation function', function () {
+      it('allows token owner to cancel reservation', async function () {
+        await this.token.reserve(firstTokenId, startTime, endTime, {
+          from: anyone,
+          value: new BigNumber(RENTAL_PRICE)
+        });
+        (await this.token.getRenter(firstTokenId, startTime)).should.equal(anyone);
+
+        await this.token.cancelReservation(firstTokenId, startTime, endTime, {
+          from: creator
+        });
+        (await this.token.getRenter(firstTokenId, startTime)).should.equal(noAddress);
+      });
+
+      it('does not allow non-owners to cancel reservation', async function () {
+        await this.token.reserve(firstTokenId, startTime, endTime, {
+          from: anyone,
+          value: new BigNumber(RENTAL_PRICE)
+        });
+        (await this.token.getRenter(firstTokenId, startTime)).should.equal(anyone);
+
+        await assertRevert(
+          this.token.cancelReservation(firstTokenId, startTime, endTime, {
+            from: otherUser
+          })
+        );
+      });
+
+      it('cancels multiple reservations within that timeframe', async function () {
+        await this.token.reserve(firstTokenId, startTime, startTime + (2 * RENTAL_TIME_INTERVAL), {
+          from: anyone,
+          value: new BigNumber(RENTAL_PRICE)
+        });
+        await this.token.reserve(firstTokenId, startTime + (3 * RENTAL_TIME_INTERVAL), endTime, {
+          from: anyone,
+          value: new BigNumber(RENTAL_PRICE)
+        });
+        (await this.token.getRenter(firstTokenId, startTime)).should.equal(anyone);
+        (await this.token.getRenter(firstTokenId, startTime + (3 * RENTAL_TIME_INTERVAL))).should.equal(anyone);
+
+        await this.token.cancelReservation(firstTokenId, startTime, endTime, {
+          from: creator
+        });
+        (await this.token.getRenter(firstTokenId, startTime)).should.equal(noAddress);
+        (await this.token.getRenter(firstTokenId, startTime + (3 * RENTAL_TIME_INTERVAL))).should.equal(noAddress);
+      });
+
+      it('does not allow cancellation for past reservations', async function () {
+        await assertRevert(
+          this.token.cancelReservation(firstTokenId, t0 - RENTAL_TIME_INTERVAL, endTime, {
+            from: creator
+          })
+        );
       });
     });
   });
