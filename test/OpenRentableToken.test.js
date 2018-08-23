@@ -18,6 +18,7 @@ contract('OpenRentableToken', function (accounts) {
   const creator = accounts[0];
   const anyone = accounts[9];
   const RENTAL_TIME_INTERVAL = 24*3600;
+  const RENTAL_PRICE = 0;
   let t0 = new Date(), startTime = new Date(), endTime = new Date();
   startTime.setDate(t0.getDate() + 1);
   endTime.setDate(t0.getDate() + 8);
@@ -67,7 +68,7 @@ contract('OpenRentableToken', function (accounts) {
       });
 
       it('fails if reserved during the startTime', async function () {
-        await this.token.reserve(firstTokenId, t0, startTime);
+        await this.token.reserve(firstTokenId, startTime, startTime);
         await assertRevert(
           this.token.reserve(firstTokenId, startTime, endTime)
         );
@@ -95,6 +96,95 @@ contract('OpenRentableToken', function (accounts) {
       it('correctly reserves for 60 days', async function () {
         await this.token.reserve(firstTokenId, startTime, startTime + (RENTAL_TIME_INTERVAL*60));
         (await this.token.checkAvailable(firstTokenId, startTime, startTime + (RENTAL_TIME_INTERVAL*60))).should.be.false;
+      });
+    });
+
+    describe('getRenter the token', function () {
+      it('correctly identifies renters', async function () {
+        await this.token.reserve(firstTokenId, startTime, endTime, {from: creator});
+        (await this.token.getRenter(firstTokenId, startTime)).should.equal(creator);
+        (await this.token.getRenter(firstTokenId, endTime)).should.equal(creator);
+        (await this.token.getRenter(firstTokenId, startTime - RENTAL_TIME_INTERVAL)).should.not.equal(creator);
+        (await this.token.getRenter(firstTokenId, startTime - RENTAL_TIME_INTERVAL)).should.equal('0x0000000000000000000000000000000000000000');
+        (await this.token.getRenter(firstTokenId, endTime + RENTAL_TIME_INTERVAL)).should.not.equal(creator);
+        (await this.token.getRenter(firstTokenId, endTime + RENTAL_TIME_INTERVAL)).should.equal('0x0000000000000000000000000000000000000000');
+      });
+    });
+
+    describe('setRentalTimeInterval for the token', function () {
+      it('allows the token owner to change the interval', async function () {
+        (await this.token.getRentalTimeInterval(firstTokenId)).toNumber().should.equal(RENTAL_TIME_INTERVAL);
+        const NEW_RENTAL_TIME_INTERVAL = 3600*24*7;
+        await this.token.setRentalTimeInterval(firstTokenId, NEW_RENTAL_TIME_INTERVAL, { from: creator });
+        (await this.token.getRentalTimeInterval(firstTokenId)).toNumber().should.equal(NEW_RENTAL_TIME_INTERVAL);
+      });
+
+      it('does not allow a non-token owner to change the interval', async function () {
+        (await this.token.getRentalTimeInterval(firstTokenId)).toNumber().should.equal(RENTAL_TIME_INTERVAL);
+        const NEW_RENTAL_TIME_INTERVAL = 3600*24*7;
+        await assertRevert(
+          this.token.setRentalTimeInterval(firstTokenId, NEW_RENTAL_TIME_INTERVAL, { from: anyone })
+        );
+      });
+    });
+
+    describe('setRentalPrice for the token', function () {
+      it('allows the token owner to change the price', async function () {
+        (await this.token.getRentalPrice(firstTokenId)).toNumber().should.equal(RENTAL_PRICE);
+        const NEW_RENTAL_PRICE = 1000000000000000000;
+        await this.token.setRentalPrice(firstTokenId, NEW_RENTAL_PRICE, { from: creator });
+        (await this.token.getRentalPrice(firstTokenId)).toNumber().should.equal(NEW_RENTAL_PRICE);
+      });
+
+      it('does not allow a non-token owner to change the price', async function () {
+        (await this.token.getRentalPrice(firstTokenId)).toNumber().should.equal(RENTAL_PRICE);
+        const NEW_RENTAL_PRICE = 1000000000000000000;
+        await assertRevert(
+          this.token.setRentalPrice(firstTokenId, NEW_RENTAL_PRICE, { from: anyone })
+        );
+      });
+    });
+
+    describe('rental price for the token', function () {
+      it('allows reservations when rental price is 0', async function () {
+        (await this.token.getRentalPrice(firstTokenId)).toNumber().should.equal(RENTAL_PRICE);
+        await this.token.reserve(firstTokenId, startTime, endTime, {
+          from: creator,
+          value: new BigNumber(RENTAL_PRICE)
+        });
+        (await this.token.getRenter(firstTokenId, startTime)).should.equal(creator);
+      });
+
+      it('allows reservations when rental price is populated', async function () {
+        const NEW_RENTAL_PRICE = 1000000000000000000;
+        await this.token.setRentalPrice(firstTokenId, NEW_RENTAL_PRICE, { from: creator });
+        (await this.token.getRentalPrice(firstTokenId)).toNumber().should.equal(NEW_RENTAL_PRICE);
+        await this.token.reserve(firstTokenId, startTime, endTime, {
+          from: creator,
+          value: new BigNumber(NEW_RENTAL_PRICE)
+        });
+        (await this.token.getRenter(firstTokenId, startTime)).should.equal(creator);
+      });
+
+      it('rejects reservations when rental price is not met', async function () {
+        const NEW_RENTAL_PRICE = 1000000000000000000;
+        await this.token.setRentalPrice(firstTokenId, NEW_RENTAL_PRICE, { from: creator });
+        (await this.token.getRentalPrice(firstTokenId)).toNumber().should.equal(NEW_RENTAL_PRICE);
+        await assertRevert(
+          this.token.reserve(firstTokenId, startTime, endTime, {
+            from: creator,
+            value: new BigNumber(0)
+          })
+        );
+      });
+    });
+
+    describe('mintWithPrice function', function () {
+      it('allows tokens to be minted with a price', async function () {
+        const tokenId = 1;
+        const NEW_RENTAL_PRICE = 1000000000000000000;
+        await this.token.mintWithPrice(creator, tokenId, NEW_RENTAL_PRICE, { from: creator });
+        (await this.token.getRentalPrice(tokenId)).toNumber().should.equal(NEW_RENTAL_PRICE);
       });
     });
   });
