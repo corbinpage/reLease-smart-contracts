@@ -176,14 +176,14 @@ contract OpenRentableToken is ERC721Token {
     return true;
   }
 
-  /// @notice Cancel reservation for `_tokenId` between `_start` and `_stop`
-  /// @dev Reservation for that `_tokenId` between `_start` and `_stop` is cancelled. If no single reservation
-  ///         is found with that `_start` and `_stop`, then nothing is cancelled.
+  /// @notice Cancel all reservations for `_tokenId` between `_start` and `_stop`
+  /// @dev All reservations for that `_tokenId` between `_start` and `_stop` are cancelled.
   function cancelReservation(uint256 _tokenId, uint256 _start, uint256 _stop)
   external
   returns (bool success)
   {
     require(msg.sender == tokenOwner[_tokenId]);
+    require(_isFuture(_start));
     return _cancelReservation(_tokenId, _start, _stop);
   }
 
