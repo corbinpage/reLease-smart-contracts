@@ -1,13 +1,19 @@
 pragma solidity ^0.4.24;
 
-import "./openzeppelin-solidity/contracts/token/ERC721/ERC721Full.sol";
+import "openzeppelin-solidity/contracts/token/ERC721/ERC721Token.sol";
 
-// @title PrepayTimeIntervalOpenRentable
-contract OpenRentableToken is ERC721Full {
+// @title OpenRentableToken
+contract OpenRentableToken is ERC721Token {
 
   /**
       STORAGE
   */
+
+  // @dev default deposit amount (in Wei)
+  uint256 public DEFAULT_DEPOSIT_WEI = 0;
+
+  // @dev mapping for storing the deposit amount for a token
+  mapping (uint256 => uint256) public depositAmount;
 
   // @dev default rental price (in Wei)
   uint256 public DEFAULT_RENTAL_PRICE_WEI = 0;
@@ -15,7 +21,7 @@ contract OpenRentableToken is ERC721Full {
   // @dev mapping for storing the rental price for a token
   mapping (uint256 => uint256) public rentalPrices;
 
-  // @dev default minimum unit of rent is one day (in seconds)
+  // @dev default rental time interval is one day (in seconds)
   uint256 public DEFAULT_RENTAL_TIME_INTERVAL = 3600*24;
 
   // @dev mapping for storing the rental time interval for a token
@@ -39,7 +45,7 @@ contract OpenRentableToken is ERC721Full {
   */
 
   constructor(string name, string symbol) public
-    ERC721Full(name, symbol)
+    ERC721Token(name, symbol)
   { }
 
   function mint(address _to, uint256 _tokenId) public {
@@ -56,15 +62,15 @@ contract OpenRentableToken is ERC721Full {
   }
 
   function exists(uint256 _tokenId) public view returns (bool) {
-    return super._exists(_tokenId);
+    return super.exists(_tokenId);
   }
 
   function setTokenURI(uint256 _tokenId, string _uri) public {
     super._setTokenURI(_tokenId, _uri);
   }
 
-  function removeTokenFrom(address _from, uint256 _tokenId) public {
-    super._removeTokenFrom(_from, _tokenId);
+  function _removeTokenFrom(address _from, uint256 _tokenId) public {
+    super.removeTokenFrom(_from, _tokenId);
   }
 
   /**
@@ -73,7 +79,7 @@ contract OpenRentableToken is ERC721Full {
 
   // @dev Set the rental price for a token
   function setRentalPrice(uint256 _tokenId, uint256 _newPrice) external {
-    require(msg.sender == ownerOf(_tokenId));
+    require(msg.sender == tokenOwner[_tokenId]);
     rentalPrices[_tokenId] = _newPrice;
   }
 
@@ -89,9 +95,27 @@ contract OpenRentableToken is ERC721Full {
     return rentalPrices[_tokenId];
   }
 
+  // @dev Set the deposit amount for a token
+  function setDepositAmount(uint256 _tokenId, uint256 _depositAmount) external {
+    require(msg.sender == tokenOwner[_tokenId]);
+    rentalPrices[_tokenId] = _depositAmount;
+  }
+
+  // @dev Lookup to get the deposit amount for a token
+  function getDepositAmount(uint256 _tokenId)
+  public
+  view
+  returns (uint256)
+  {
+    if(depositAmount[_tokenId] == 0) {
+      return DEFAULT_DEPOSIT_AMOUNT_WEI;
+    }
+    return depositAmount[_tokenId];
+  }
+
   // @dev Set the rental time interval for a token
   function setRentalTimeInterval(uint256 _tokenId, uint256 _newInterval) external {
-    require(msg.sender == ownerOf(_tokenId));
+    require(msg.sender == tokenOwner[_tokenId]);
     rentalTimeIntervals[_tokenId] = _newInterval;
   }
 
@@ -127,7 +151,7 @@ contract OpenRentableToken is ERC721Full {
   external
   returns (bool)
   {
-    require(getRentalPrice(_tokenId) <= msg.value);
+    require(getRentalPrice(_tokenId) + getDepositAmount(_tokenId) <= msg.value);
     require(_isFuture(_start));
     require(checkAvailable(_tokenId, _start, _stop));
 
@@ -136,7 +160,7 @@ contract OpenRentableToken is ERC721Full {
     require(start <= stop);
 
     // make payment
-    address(ownerOf(_tokenId)).transfer(msg.value);
+    address(tokenOwner[_tokenId]).transfer(msg.value);
 
     // make reservation
     for (uint i = start; i <= stop; i++) {
@@ -152,6 +176,18 @@ contract OpenRentableToken is ERC721Full {
 
     return true;
   }
+
+  /// @notice Return the `_renter`'s deposit for the reservation
+  /// @dev This function should be callable by either the owner of _tokenId or _renter,
+  ///  however, the owner should only be able to call this function if now >= _stop to
+  ///  prevent premature settlement of funds.
+  // function access(uint256 _tokenId, address _renter, uint256 _stop) external returns (bool success);
+
+
+access(uint256 _tokenId) external returns (bool success)
+
+
+
 
   /// @notice Revoke access to token `_tokenId` from `_renter` and settle payments
   /// @dev This function should be callable by either the owner of _tokenId or _renter,
@@ -182,7 +218,7 @@ contract OpenRentableToken is ERC721Full {
   external
   returns (bool success)
   {
-    require(msg.sender == ownerOf(_tokenId));
+    require(msg.sender == tokenOwner[_tokenId]);
     require(_isFuture(_start));
     return _cancelReservation(_tokenId, _start, _stop);
   }
