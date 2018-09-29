@@ -2,7 +2,7 @@
 ## Overview
 The [reLease dApp](https://leasing.meridio.co/) allows anyone to rent a stylish, productive workspace for the day to work amongst a group of creative peers, with no subscription or lock in. Coworking spaces can monetize unused space by adding hot desks, conference rooms, or event space to the app and instantly get paid out in ETH when they are reserved.
 
-The [Meridio](https://www.meridio.co/) team has open sourced the reLease smart contracts for the community to review, use, and build off. We'll be continuing to evolve the contracts over time, so check back for updates. Note that the contract has **not been through an official audit** so avoid using in Production.
+The [Meridio](https://www.meridio.co/) team has open sourced the reLease smart contracts for the community to review, use, and build off. We'll be continuing to evolve the contracts over time, so check back for updates. Note that the contracts have **not been through an official security audit**, so they should not be used in Production.
 
 ## Smart Contracts
 ### OpenRentableToken
