@@ -2,7 +2,7 @@
 ## Overview
 The [reLease dApp](https://leasing.meridio.co/) allows anyone to rent a stylish, productive workspace for the day to work amongst a group of creative peers, with no subscription or lock in. Coworking spaces can monetize unused space by adding hot desks, conference rooms, or event space to the app and instantly get paid out in ETH when they are reserved.
 
-The [Meridio](https://www.meridio.co/) team has open sourced the reLease smart contracts for the community to review, use, and build off. We'll be continuing to evolve the contracts over time, so check back for updates. Note that the contracts have **not been through an official security audit**, so they should not be used in Production.
+The [Meridio](https://www.meridio.co/) team has open sourced the reLease smart contracts for the community to review, use, and build off. We'll be continuing to evolve the contracts over time, so check back for updates. Note that the contracts have **not been through an official security audit**, so they should not be used in production.
 
 ## Smart Contracts
 ### OpenRentableToken
@@ -14,7 +14,7 @@ This repository utilizes [Truffle](https://truffleframework.com/) - a developmen
  npm install -g truffle
 ```
 
-You can run truffle compile, truffle migrate and truffle test to compile your contracts, deploy those contracts to the network, and run their associated unit tests. To make things easier, we recommend using [Ganache](https://truffleframework.com/docs/ganache/quickstart) as your local blockchain.
+You can run the following commands to compile the contracts, deploy those contracts to a blockchain network, and then run their associated unit tests. To make things easier, we recommend using [Ganache](https://truffleframework.com/docs/ganache/quickstart) as your local blockchain.
 
 ```bash
 truffle compile
@@ -35,4 +35,4 @@ truffle test
 MIT
 
 ## Team
-[![Meridio](https://pangea-docs.s3.amazonaws.com/1539201121528-logo.png)](https://www.meridio.io)
+[![Meridio](https://pangea-docs.s3.amazonaws.com/1539201121528-logo.png)](https://www.meridio.co)
