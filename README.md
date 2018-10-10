@@ -1,7 +1,3 @@
-<p align="center">
-<img src="" alt="service provider view" style="width: 200px;"/>
-</p>
-
 # reLease Smart Contracts
 ## Overview
 The [reLease dApp](https://leasing.meridio.co/) allows anyone to rent a stylish, productive workspace for the day to work amongst a group of creative peers, with no subscription or lock in. Coworking spaces can monetize unused space by adding hot desks, conference rooms, or event space to the app and instantly get paid out in ETH when they are reserved.
@@ -39,4 +35,4 @@ truffle test
 MIT
 
 ## Team
-[![Meridio](https://github.com/MeridioRE/reLease-smart-contracts/raw/updating-docs/static/logo.png)](https://www.meridio.io)
+[![Meridio](https://pangea-docs.s3.amazonaws.com/1539201121528-logo.png)](https://www.meridio.io)
