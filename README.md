@@ -12,6 +12,7 @@ The OpenRentableToken is an ERC721 token representing a hot desk, conference roo
 This repository utilizes [Truffle](https://truffleframework.com/) - a development environment, testing framework and asset pipeline for Ethereum. 
 ```bash
  npm install -g truffle
+ npm install
 ```
 
 You can run the following commands to compile the contracts, deploy those contracts to a blockchain network, and then run their associated unit tests. To make things easier, we recommend using [Ganache](https://truffleframework.com/docs/ganache/quickstart) as your local blockchain.
